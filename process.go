@@ -46,15 +46,15 @@ type streamMessage struct {
 	Datas  []streamData `json:"data"`
 }
 
-func processMsg(msg []byte) (string, bool) {
+func processMsg(msg []byte) (map[string]interface{}, bool) {
 	var stream streamMessage
 	err := json.Unmarshal(msg, &stream)
 	if err != nil {
 		fmt.Println("unmarshal msg failed ", err)
-		return "", false
+		return nil, false
 	}
 	if stream.Stream == "" {
-		return "", false
+		return nil, false
 	}
 	fmt.Println("pairs len:", len(stream.Datas))
 	var parsed []parsedData
@@ -77,7 +77,7 @@ func processMsg(msg []byte) (string, bool) {
 	sort.Slice(parsed, func(i, j int) bool {
 		return parsed[i].Change > parsed[j].Change
 	})
-	topIdx := 20
+	topIdx := 30
 	if topIdx > len(parsed) {
 		topIdx = len(parsed)
 	}
@@ -91,17 +91,24 @@ func processMsg(msg []byte) (string, bool) {
 		topIdx = len(top)
 	}
 	top = top[:topIdx]
-	str := time.Now().Format("## 2006-01-02 15:04:05\n")
-	var funRet []string
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	timeStr := time.Now().In(loc).Format(`2006-01-02 15:04:05`)
+	str := `<p style="font-size:1rem">` + timeStr + `</p>`
+	markDownStr := "## " + timeStr + "\n"
 	for idx, v := range top {
-		val := fmt.Sprintf("* %d %s\n", idx+1, v.String())
+		val := fmt.Sprintf(`<p style="font-size:1rem">%d %s</p>`, idx+1, v.String())
 		str += val
-		funRet = append(funRet, val)
+		markDownStr += fmt.Sprintf(`* %d %s\n`, idx+1, v.String())
 	}
 	fmt.Println("result:\n", str)
-	err = push2Server(mykey, str)
-	retStr, _ := json.Marshal(&funRet)
-	return string(retStr), true
+	err = push2Server(mykey, markDownStr)
+	retMap := map[string]interface{}{
+		"isBase64Encoded": false,
+		"statusCode":      200,
+		"headers":         map[string]string{"Content-Type": "text/html; charset=utf-8"},
+		"body":            "<html><head><meta charset=\"UTF-8\"><body>" + str + "</body></html>",
+	}
+	return retMap, true
 }
 
 const mykey = "SCT94347TXJfMv9PQtaKqIYV5ksxMEz5N"
@@ -114,7 +121,11 @@ type parsedData struct {
 }
 
 func (p parsedData) String() string {
-	return fmt.Sprintf("%s 涨幅:%.02f%% 成交额:%s", getUsdtParisName(p.Pairs), p.Change*100, parseHumanReadableQuality(p.Quality))
+	currentFormat := "%.2f"
+	if p.Current <= 0.01 {
+		currentFormat = "%f"
+	}
+	return fmt.Sprintf("%s 当前价:"+currentFormat+" 涨幅:%.02f%% 成交额:%s", getUsdtParisName(p.Pairs), p.Current, p.Change*100, parseHumanReadableQuality(p.Quality))
 }
 
 func getUsdtParisName(pair string) string {

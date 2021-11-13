@@ -19,7 +19,7 @@ func main() {
 	//fmt.Println("result", result)
 }
 
-func run() (string, error) {
+func run() (map[string]interface{}, error) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
@@ -33,7 +33,7 @@ func run() (string, error) {
 	defer c.Close()
 
 	done := make(chan struct{})
-	var result string = "{}"
+	var result = map[string]interface{}{}
 	go func() {
 		defer close(done)
 		err := c.WriteMessage(websocket.TextMessage, []byte(`{"method":"SUBSCRIBE","params":["!miniTicker@arr@3000ms"],"id":1}`))
