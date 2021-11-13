@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type streamData struct {
@@ -90,13 +91,20 @@ func processMsg(msg []byte) (string, bool) {
 		topIdx = len(top)
 	}
 	top = top[:topIdx]
-	str := ""
+	str := time.Now().Format("## 2006-01-02 15:04:05\n")
+	var funRet []string
 	for idx, v := range top {
-		str += fmt.Sprintf("%d. %s\n", idx+1, v.String())
+		val := fmt.Sprintf("* %d %s\n", idx+1, v.String())
+		str += val
+		funRet = append(funRet, val)
 	}
 	fmt.Println("result:\n", str)
-	return str, true
+	err = push2Server(mykey, str)
+	retStr, _ := json.Marshal(&funRet)
+	return string(retStr), true
 }
+
+const mykey = "SCT94347TXJfMv9PQtaKqIYV5ksxMEz5N"
 
 type parsedData struct {
 	Pairs   string

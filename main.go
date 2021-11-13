@@ -33,7 +33,7 @@ func run() (string, error) {
 	defer c.Close()
 
 	done := make(chan struct{})
-	var result string
+	var result string = "{}"
 	go func() {
 		defer close(done)
 		err := c.WriteMessage(websocket.TextMessage, []byte(`{"method":"SUBSCRIBE","params":["!miniTicker@arr@3000ms"],"id":1}`))
@@ -47,13 +47,13 @@ func run() (string, error) {
 				fmt.Println("read:", err)
 				return
 			}
-			fmt.Printf("recv: %s\n", message)
 			msg, ok := processMsg(message)
 			if ok {
 				fmt.Println("process ended")
 				result = msg
 				break
 			}
+			fmt.Printf("recv: %s\n", message)
 		}
 	}()
 
