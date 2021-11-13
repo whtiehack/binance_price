@@ -46,7 +46,7 @@ type streamMessage struct {
 	Datas  []streamData `json:"data"`
 }
 
-func processMsg(msg []byte) (map[string]interface{}, bool) {
+func processMsg(msg []byte,sendNotify bool) (map[string]interface{}, bool) {
 	var stream streamMessage
 	err := json.Unmarshal(msg, &stream)
 	if err != nil {
@@ -102,7 +102,9 @@ func processMsg(msg []byte) (map[string]interface{}, bool) {
 	}
 	fmt.Println("result:\n", str)
 	fmt.Println("markDownStr:\n", markDownStr)
-	err = push2Server(mykey, markDownStr)
+	if sendNotify {
+		err = push2Server(mykey, markDownStr)
+	}
 	retMap := map[string]interface{}{
 		"isBase64Encoded": false,
 		"statusCode":      200,

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/tencentyun/scf-go-lib/cloudfunction"
@@ -19,7 +20,15 @@ func main() {
 	//fmt.Println("result", result)
 }
 
-func run() (map[string]interface{}, error) {
+type DefineEvent struct {
+	Type string
+	// test event define
+	Key1 string `json:"key1"`
+	Key2 string `json:"key2"`
+}
+
+func run(_ context.Context, event DefineEvent) (map[string]interface{}, error) {
+	fmt.Printf("event: %#v\n", event)
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
@@ -47,7 +56,7 @@ func run() (map[string]interface{}, error) {
 				fmt.Println("read:", err)
 				return
 			}
-			msg, ok := processMsg(message)
+			msg, ok := processMsg(message, event.Type == "Timer")
 			if ok {
 				fmt.Println("process ended")
 				result = msg
