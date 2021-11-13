@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
-	"github.com/tencentyun/scf-go-lib/cloudfunction"
 	"net/url"
 	"os"
 	"os/signal"
@@ -11,12 +10,12 @@ import (
 )
 
 func main() {
-	cloudfunction.Start(run)
-	//result, err := run()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Println("result", result)
+	//cloudfunction.Start(run)
+	result, err := run()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("result", result)
 }
 
 func run() (map[string]interface{}, error) {

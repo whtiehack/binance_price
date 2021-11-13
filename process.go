@@ -77,7 +77,7 @@ func processMsg(msg []byte) (map[string]interface{}, bool) {
 	sort.Slice(parsed, func(i, j int) bool {
 		return parsed[i].Change > parsed[j].Change
 	})
-	topIdx := 30
+	topIdx := 20
 	if topIdx > len(parsed) {
 		topIdx = len(parsed)
 	}
@@ -94,13 +94,14 @@ func processMsg(msg []byte) (map[string]interface{}, bool) {
 	loc, _ := time.LoadLocation("Asia/Shanghai")
 	timeStr := time.Now().In(loc).Format(`2006-01-02 15:04:05`)
 	str := `<p style="font-size:1rem">` + timeStr + `</p>`
-	markDownStr := "## " + timeStr + "\n"
+	markDownStr := "## " + timeStr + "\n\n"
 	for idx, v := range top {
 		val := fmt.Sprintf(`<p style="font-size:1rem">%d %s</p>`, idx+1, v.String())
 		str += val
-		markDownStr += fmt.Sprintf(`* %d %s\n`, idx+1, v.String())
+		markDownStr += fmt.Sprintf("* %d %s \n\n", idx+1, v.String())
 	}
 	fmt.Println("result:\n", str)
+	fmt.Println("markDownStr:\n", markDownStr)
 	err = push2Server(mykey, markDownStr)
 	retMap := map[string]interface{}{
 		"isBase64Encoded": false,
