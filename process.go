@@ -10,15 +10,19 @@ import (
 )
 
 type streamData struct {
-	Estr    string `json:"e"` // 事件类型
-	E       int    `json:"E"` // 事件时间
-	Pairs   string `json:"s"` // 交易对 BNBBTC  BTCUSDT
-	Current string `json:"c"` // 最新成交价格
-	Open    string `json:"o"` // 24小时前开始第一笔成交价格
-	High    string `json:"h"` // 24小时内最高成交价
-	Low     string `json:"l"` // 24小时内最低成交价
-	Volumn  string `json:"v"` // 成交量
+	Estr         string      `json:"e"` // 事件类型
+	E            int         `json:"E"` // 事件时间
+	CTime        int         `json:"C"` // 事件时间
+	PriceChanged string      `json:"p"`
+	Pairs        string      `json:"s"` // 交易对 BNBBTC  BTCUSDT
+	Current      string      `json:"c"` // 最新成交价格
+	Open         string      `json:"o"` // 24小时前开始第一笔成交价格
+	OTime        interface{} `json:"O"` // 统计开始时间
+	//High    string      `json:"h"` // 24小时内最高成交价
+	//Low     interface{} `json:"l"` // 24小时内最低成交价
+	//Volumn  string      `json:"v"` // 成交量
 	Quality string `json:"q"` // 成交额
+	Change  string `json:"P"`
 }
 
 func (s streamData) GetQuality() float64 {
@@ -46,7 +50,7 @@ type streamMessage struct {
 	Datas  []streamData `json:"data"`
 }
 
-func processMsg(msg []byte,sendNotify bool) (map[string]interface{}, bool) {
+func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
 	var stream streamMessage
 	err := json.Unmarshal(msg, &stream)
 	if err != nil {
@@ -93,13 +97,14 @@ func processMsg(msg []byte,sendNotify bool) (map[string]interface{}, bool) {
 	top = top[:topIdx]
 	loc, _ := time.LoadLocation("Asia/Shanghai")
 	timeStr := time.Now().In(loc).Format(`2006-01-02 15:04:05`)
-	str := `<p style="font-size:1rem">` + timeStr + `</p>`
-	markDownStr := "## " + timeStr + "\n\n"
+	str := `<p style="font-size:1.1rem">` + timeStr + `</p>`
+	markDownStr := "## " + timeStr + "\n\n```\n" + timeStr + "\n\n"
 	for idx, v := range top {
-		val := fmt.Sprintf(`<p style="font-size:1rem">%d %s</p>`, idx+1, v.String())
+		val := fmt.Sprintf(`<br><p style="font-size:1.1rem">%d %s</p>`, idx+1, v.String())
 		str += val
-		markDownStr += fmt.Sprintf("* %d %s \n\n", idx+1, v.String())
+		markDownStr += fmt.Sprintf("%d %s\n\n", idx+1, v.String())
 	}
+	markDownStr += "\n\n```\n"
 	fmt.Println("result:\n", str)
 	fmt.Println("markDownStr:\n", markDownStr)
 	if sendNotify {
@@ -128,7 +133,7 @@ func (p parsedData) String() string {
 	if p.Current <= 0.01 {
 		currentFormat = "%f"
 	}
-	return fmt.Sprintf("%s 当前价:"+currentFormat+" 涨幅:%.02f%% 成交额:%s", getUsdtParisName(p.Pairs), p.Current, p.Change*100, parseHumanReadableQuality(p.Quality))
+	return fmt.Sprintf("%s 价:"+currentFormat+" 幅:%.02f%% 额:%s", getUsdtParisName(p.Pairs), p.Current, p.Change*100, parseHumanReadableQuality(p.Quality))
 }
 
 func getUsdtParisName(pair string) string {

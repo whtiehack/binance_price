@@ -45,7 +45,7 @@ func run(_ context.Context, event DefineEvent) (map[string]interface{}, error) {
 	var result = map[string]interface{}{}
 	go func() {
 		defer close(done)
-		err := c.WriteMessage(websocket.TextMessage, []byte(`{"method":"SUBSCRIBE","params":["!miniTicker@arr@3000ms"],"id":1}`))
+		err := c.WriteMessage(websocket.TextMessage, []byte(`{"method":"SUBSCRIBE","params":["!ticker@arr@3000ms"],"id":1}`))
 		if err != nil {
 			fmt.Println("write:", err)
 			return
