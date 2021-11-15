@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -119,7 +120,8 @@ func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
 	return retMap, true
 }
 
-const mykey = "SCT94347TXJfMv9PQtaKqIYV5ksxMEz5N"
+//go:embed mykey.txt
+var mykey string
 
 type parsedData struct {
 	Pairs   string
