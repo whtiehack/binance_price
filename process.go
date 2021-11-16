@@ -64,7 +64,7 @@ func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
 	fmt.Println("pairs len:", len(stream.Datas))
 	var parsed []parsedData
 	for _, v := range stream.Datas {
-		if !v.IsUsdtPair() {
+		if !v.IsUsdtPair() || v.GetQuality() < 100000000 {
 			continue
 		}
 		change := v.Get24HourChange()
@@ -86,10 +86,10 @@ func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
 	if topIdx > len(parsed) {
 		topIdx = len(parsed)
 	}
-	top := parsed[:topIdx]
+	top := parsed
 	// 再按照成交量排序
 	sort.Slice(top, func(i, j int) bool {
-		return parsed[i].Quality > parsed[j].Quality
+		return top[i].Quality > top[j].Quality
 	})
 	topIdx = 5
 	if topIdx > len(top) {
