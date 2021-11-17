@@ -51,6 +51,14 @@ type streamMessage struct {
 	Datas  []streamData `json:"data"`
 }
 
+var filterPaires = map[string]bool{
+	"BTC":  true,
+	"ETH":  true,
+	"BUSD": true,
+	"USDC": true,
+	"TUSD": true,
+}
+
 func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
 	var stream streamMessage
 	err := json.Unmarshal(msg, &stream)
@@ -67,11 +75,11 @@ func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
 		if !v.IsUsdtPair() || v.GetQuality() < 100000000 {
 			continue
 		}
-		if v.Pairs[:4] == "BUSD" || v.Pairs[:4] == "USDC" || v.Pairs[:4] == "TUSD" {
+		if filterPaires[v.Pairs[:4]] {
 			continue
 		}
 		change := v.Get24HourChange()
-		if change <= 0 {
+		if change <= 0.03 {
 			continue
 		}
 		parsed = append(parsed, parsedData{
@@ -85,16 +93,19 @@ func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
 	sort.Slice(parsed, func(i, j int) bool {
 		return parsed[i].Change > parsed[j].Change
 	})
-	topIdx := 20
+	topIdx := len(parsed)
 	if topIdx > len(parsed) {
 		topIdx = len(parsed)
 	}
-	top := parsed
+	top := parsed[:topIdx]
 	// 再按照成交量排序
 	sort.Slice(top, func(i, j int) bool {
 		return top[i].Quality > top[j].Quality
 	})
-	topIdx = 5
+	//for _, v := range top {
+	//	fmt.Println(v)
+	//}
+	topIdx = 10
 	if topIdx > len(top) {
 		topIdx = len(top)
 	}
@@ -103,10 +114,10 @@ func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
 	timeStr := time.Now().In(loc).Format(`2006-01-02 15:04:05`)
 	str := `<p style="font-size:1.1rem">` + timeStr + `</p>`
 	markDownStr := "## " + timeStr + "\n\n```\n" + timeStr + "\n\n"
-	for idx, v := range top {
-		val := fmt.Sprintf(`<br><p style="font-size:1.1rem">%d %s</p>`, idx+1, v.String())
+	for _, v := range top {
+		val := fmt.Sprintf(`<p style="font-size:1.1rem">%s</p>`, v.String())
 		str += val
-		markDownStr += fmt.Sprintf("%d %s\n\n", idx+1, v.String())
+		markDownStr += fmt.Sprintf("%s\n\n", v.String())
 	}
 	markDownStr += "\n\n```\n"
 	fmt.Println("result:\n", str)
