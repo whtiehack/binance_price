@@ -67,8 +67,11 @@ func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
 		if !v.IsUsdtPair() || v.GetQuality() < 100000000 {
 			continue
 		}
+		if v.Pairs[:4] == "BUSD" || v.Pairs[:4] == "USDC" || v.Pairs[:4] == "TUSD" {
+			continue
+		}
 		change := v.Get24HourChange()
-		if change < 0 {
+		if change <= 0 {
 			continue
 		}
 		parsed = append(parsed, parsedData{
