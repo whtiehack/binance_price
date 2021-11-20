@@ -75,7 +75,7 @@ func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
 		if !v.IsUsdtPair() || v.GetQuality() < 100000000 {
 			continue
 		}
-		if filterPaires[v.Pairs[:4]] {
+		if filterPaires[v.Pairs[:len(v.Pairs)-4]] {
 			continue
 		}
 		change := v.Get24HourChange()
