@@ -1,14 +1,17 @@
 package main
 
 import (
+	"binanceprice/oklink"
 	"context"
+	_ "embed"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/tencentyun/scf-go-lib/cloudfunction"
 	"net/url"
 	"os"
 	"os/signal"
-	"time"
+	"strconv"
+	"sync"
 )
 
 func main() {
@@ -27,6 +30,9 @@ type DefineEvent struct {
 	Key2 string `json:"key2"`
 }
 
+//go:embed mykey.txt
+var mykey string
+
 func run(_ context.Context, event DefineEvent) (map[string]interface{}, error) {
 	fmt.Printf("event: %#v\n", event)
 	interrupt := make(chan os.Signal, 1)
@@ -40,11 +46,12 @@ func run(_ context.Context, event DefineEvent) (map[string]interface{}, error) {
 		panic("dial:" + err.Error())
 	}
 	defer c.Close()
-
-	done := make(chan struct{})
-	var result = map[string]interface{}{}
+	var htmlStr, markDownStr string
+	var ethValue24h int
+	var wg sync.WaitGroup
+	wg.Add(2)
 	go func() {
-		defer close(done)
+		defer wg.Done()
 		err := c.WriteMessage(websocket.TextMessage, []byte(`{"method":"SUBSCRIBE","params":["!ticker@arr@3000ms"],"id":1}`))
 		if err != nil {
 			fmt.Println("write:", err)
@@ -56,35 +63,44 @@ func run(_ context.Context, event DefineEvent) (map[string]interface{}, error) {
 				fmt.Println("read:", err)
 				return
 			}
-			msg, ok := processMsg(message, event.Type == "Timer")
+			var ok bool
+			htmlStr, markDownStr, ok = processMsg(message)
 			if ok {
-				fmt.Println("process ended")
-				result = msg
+				fmt.Println("binance prices process ended")
 				break
 			}
 			fmt.Printf("recv: %s\n", message)
 		}
 	}()
+	go func() {
+		defer wg.Done()
+		ethInfo, err := oklink.GetEthInfo()
+		if err != nil {
+			fmt.Println("get eth info error:", err)
+			return
+		}
+		ethValue24h = int(ethInfo.Data.Transaction.TransactionValue24H)
+	}()
+	wg.Wait()
+	htmlStr += `<p style="font-size:1.1rem">24h 链上交易量</p>`
+	ethVal := comma(strconv.Itoa(ethValue24h))
+	htmlStr += `<p style="font-size:1.1rem">` + ethVal + `ETH</p>`
+	markDownStr += "\n\n```\n24h 链上交易量\n" + ethVal + "ETH\n```\n"
 
-	for {
-		select {
-		case <-done:
-			return result, nil
-		case <-interrupt:
-			fmt.Println("interrupt")
-
-			// Cleanly close the connection by sending a close message and then
-			// waiting (with timeout) for the server to close the connection.
-			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			if err != nil {
-				fmt.Println("write close:", err)
-				return result, err
-			}
-			select {
-			case <-done:
-			case <-time.After(time.Second):
-			}
-			return result, err
+	sendNotify := event.Type == "Timer"
+	if sendNotify && markDownStr != "" {
+		e := push2Server(mykey, markDownStr)
+		if e != nil {
+			fmt.Println("push to server error:", e)
 		}
 	}
+	fmt.Println("result:\n", htmlStr)
+	fmt.Println("markDownStr:\n", markDownStr)
+	retMap := map[string]interface{}{
+		"isBase64Encoded": false,
+		"statusCode":      200,
+		"headers":         map[string]string{"Content-Type": "text/html; charset=utf-8"},
+		"body":            "<html><head><meta charset=\"UTF-8\"><body>" + htmlStr + "</body></html>",
+	}
+	return retMap, nil
 }

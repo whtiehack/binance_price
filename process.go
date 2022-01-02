@@ -1,7 +1,6 @@
 package main
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -59,15 +58,16 @@ var filterPaires = map[string]bool{
 	"TUSD": true,
 }
 
-func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
+// return html string, markdown string
+func processMsg(msg []byte) (string,string, bool) {
 	var stream streamMessage
 	err := json.Unmarshal(msg, &stream)
 	if err != nil {
 		fmt.Println("unmarshal msg failed ", err)
-		return nil, false
+		return "","", false
 	}
 	if stream.Stream == "" {
-		return nil, false
+		return "","", false
 	}
 	fmt.Println("pairs len:", len(stream.Datas))
 	var parsed []parsedData
@@ -120,22 +120,9 @@ func processMsg(msg []byte, sendNotify bool) (map[string]interface{}, bool) {
 		markDownStr += fmt.Sprintf("%s\n\n", v.String())
 	}
 	markDownStr += "\n\n```\n"
-	fmt.Println("result:\n", str)
-	fmt.Println("markDownStr:\n", markDownStr)
-	if sendNotify {
-		err = push2Server(mykey, markDownStr)
-	}
-	retMap := map[string]interface{}{
-		"isBase64Encoded": false,
-		"statusCode":      200,
-		"headers":         map[string]string{"Content-Type": "text/html; charset=utf-8"},
-		"body":            "<html><head><meta charset=\"UTF-8\"><body>" + str + "</body></html>",
-	}
-	return retMap, true
+	return str,markDownStr, true
 }
 
-//go:embed mykey.txt
-var mykey string
 
 type parsedData struct {
 	Pairs   string
