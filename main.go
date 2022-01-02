@@ -1,6 +1,7 @@
 package main
 
 import (
+	"binanceprice/bscscan"
 	"binanceprice/oklink"
 	"context"
 	_ "embed"
@@ -12,6 +13,7 @@ import (
 	"os/signal"
 	"strconv"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -49,7 +51,7 @@ func run(_ context.Context, event DefineEvent) (map[string]interface{}, error) {
 	var htmlStr, markDownStr string
 	var ethValue24h int
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
 		defer wg.Done()
 		err := c.WriteMessage(websocket.TextMessage, []byte(`{"method":"SUBSCRIBE","params":["!ticker@arr@3000ms"],"id":1}`))
@@ -81,11 +83,30 @@ func run(_ context.Context, event DefineEvent) (map[string]interface{}, error) {
 		}
 		ethValue24h = int(ethInfo.Data.Transaction.TransactionValue24H)
 	}()
+	var bscTimeStamp, bscTransactions string
+	go func() {
+		defer wg.Done()
+		var err error
+		bscTimeStamp, bscTransactions, err = bscscan.GetBscLatestDayTransaction()
+		if err != nil || bscTimeStamp == "" {
+			fmt.Println("get bsc latest day transaction error:", err)
+			return
+		}
+	}()
 	wg.Wait()
 	htmlStr += `<p style="font-size:1.1rem">24h 链上交易量</p>`
 	ethVal := comma(strconv.Itoa(ethValue24h))
 	htmlStr += `<p style="font-size:1.1rem">` + ethVal + `ETH</p>`
 	markDownStr += "\n\n```\n24h 链上交易量\n" + ethVal + "ETH\n```\n"
+
+	if bscTimeStamp != "" {
+		t, _ := strconv.Atoi(bscTimeStamp)
+		fmt.Println("bsc timestamp:", bscTimeStamp, bscTransactions, time.Unix(int64(t), 0).Format("2006-01-02"))
+		htmlStr += `<p style="font-size:1.1rem">` + time.Unix(int64(t), 0).Format("2006-01-02") + ` BSC链上交易数</p>`
+		bscTransactions = comma(bscTransactions)
+		htmlStr += `<p style="font-size:1.1rem">` + bscTransactions + `</p>`
+		markDownStr += "\n\n```\n" + time.Unix(int64(t), 0).Format("2006-01-02") + " BSC链上交易数\n" + bscTransactions + "\n```\n"
+	}
 
 	sendNotify := event.Type == "Timer"
 	if sendNotify && markDownStr != "" {
