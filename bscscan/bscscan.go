@@ -28,5 +28,5 @@ func GetBscLatestDayTransaction() (string, string, error) {
 	if len(arr) < 2 {
 		return "", "", err
 	}
-	return strings.ReplaceAll(string(arr[1]), "\"", ""), strings.ReplaceAll(string(arr[2]), "\"", ""), nil
+	return strings.TrimSpace(strings.ReplaceAll(string(arr[1]), "\"", "")), strings.TrimSpace(strings.ReplaceAll(string(arr[2]), "\"", "")), nil
 }
