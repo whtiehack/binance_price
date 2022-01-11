@@ -76,12 +76,18 @@ func run(_ context.Context, event DefineEvent) (map[string]interface{}, error) {
 	}()
 	go func() {
 		defer wg.Done()
-		ethInfo, err := oklink.GetEthInfo()
-		if err != nil {
-			fmt.Println("get eth info error:", err)
-			return
+		for i := 0; i < 3; i++ {
+			ethInfo, err := oklink.GetEthInfo()
+			if err != nil {
+				fmt.Println("get eth info error:", err)
+				return
+			}
+			ethValue24h = int(ethInfo.Data.Transaction.TransactionValue24H)
+			if ethValue24h != 0 {
+				break
+			}
+			fmt.Println("get eth value 24h error, retry...", i)
 		}
-		ethValue24h = int(ethInfo.Data.Transaction.TransactionValue24H)
 	}()
 	var bscTimeStamp, bscTransactions string
 	go func() {
