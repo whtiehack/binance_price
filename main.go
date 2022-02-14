@@ -93,10 +93,15 @@ func run(_ context.Context, event DefineEvent) (map[string]interface{}, error) {
 	go func() {
 		defer wg.Done()
 		var err error
-		bscTimeStamp, bscTransactions, err = bscscan.GetBscLatestDayTransaction()
-		if err != nil || bscTimeStamp == "" {
-			fmt.Println("get bsc latest day transaction error:", err)
-			return
+		count := 0
+		for count < 4 {
+			count++
+			bscTimeStamp, bscTransactions, err = bscscan.GetBscLatestDayTransaction()
+			if err != nil || bscTimeStamp == "" {
+				fmt.Println("get bsc latest day transaction error:", err)
+				continue
+			}
+			break
 		}
 	}()
 	wg.Wait()
