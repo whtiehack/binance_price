@@ -120,8 +120,8 @@ func run(_ context.Context, event DefineEvent) (map[string]interface{}, error) {
 	}
 
 	sendNotify := event.Type == "Timer"
-	if sendNotify && markDownStr != "" {
-		e := push2Server(mykey, markDownStr)
+	if sendNotify && htmlStr != "" {
+		e := push2WxPusher(mykey, "5580", htmlStr)
 		if e != nil {
 			fmt.Println("push to server error:", e)
 		}
