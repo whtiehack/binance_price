@@ -1,4 +1,4 @@
-package main
+package run
 
 import (
 	"encoding/json"
@@ -59,15 +59,15 @@ var filterPaires = map[string]bool{
 }
 
 // return html string, markdown string
-func processMsg(msg []byte) (string,string, bool) {
+func processMsg(msg []byte) (string, string, bool) {
 	var stream streamMessage
 	err := json.Unmarshal(msg, &stream)
 	if err != nil {
 		fmt.Println("unmarshal msg failed ", err)
-		return "","", false
+		return "", "", false
 	}
 	if stream.Stream == "" {
-		return "","", false
+		return "", "", false
 	}
 	fmt.Println("pairs len:", len(stream.Datas))
 	var parsed []parsedData
@@ -120,9 +120,8 @@ func processMsg(msg []byte) (string,string, bool) {
 		markDownStr += fmt.Sprintf("%s\n\n", v.String())
 	}
 	markDownStr += "\n\n```\n"
-	return str,markDownStr, true
+	return str, markDownStr, true
 }
-
 
 type parsedData struct {
 	Pairs   string

@@ -1,6 +1,7 @@
 package oklink
 
 import (
+	"crypto/tls"
 	_ "embed"
 	"encoding/base64"
 	"encoding/json"
@@ -65,7 +66,9 @@ func GetEthInfo() (Info, error) {
 	request.Header.Set("Sec-Fetch-Mode", "cors")
 	request.Header.Set("Sec-Fetch-Dest", "empty")
 	request.Header.Set("Referer", "https://www.oklink.com/zh-cn/eth")
-	client := &http.Client{}
+	client := &http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}}
 	response, err := client.Do(request)
 	if err != nil {
 		return Info{}, err
